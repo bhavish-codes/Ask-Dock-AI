@@ -1,84 +1,96 @@
 # Ask Docks AI 🚀
 
-Ask Docks AI is a powerful Retrieval-Augmented Generation (RAG) application that allows you to chat with your documents and web content. Upload PDFs or provide URLs to gain instant insights using state-of-the-art AI.
+Ask Docks AI is a professional Retrieval-Augmented Generation (RAG) application that allows you to chat with your documents and web content. Upload PDFs or provide URLs to gain instant insights using state-of-the-art AI.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![Node.js](https://img.shields.io/badge/Node.js-20-green)
 ![Express](https://img.shields.io/badge/Express-5-lightgrey)
+![CI](https://github.com/bhavish-codes/Ask-Dock-AI/actions/workflows/ci.yml/badge.svg)
 
 ## ✨ Features
 
-- 📄 **PDF Analysis**: Upload any PDF and start asking questions immediately.
-- 🌐 **URL Ingestion**: Provide a website URL to scrape and analyze its content.
-- 🧠 **Smart Retrieval**: Uses semantic search with local embeddings (all-MiniLM-L6-v2) for accurate context retrieval.
-- 💬 **AI Assistant**: Powered by Groq for lightning-fast, intelligent responses.
-- 📂 **Document Management**: Keep track of your uploaded documents and chat histories.
-- 🎨 **Modern UI**: Clean, responsive dashboard built with Next.js and Tailwind CSS.
+- 📄 **PDF Analysis**: Seamlessly upload and extract text from PDFs.
+- 🌐 **URL Ingestion**: Scrape and index website content for interactive Q&A.
+- 🧠 **Semantic Search**: Uses local embeddings (**all-MiniLM-L6-v2**) to retrieve the most relevant context.
+- 💬 **AI Assistant**: Powered by **Groq** for high-speed, accurate responses.
+- 📂 **Persistence**: MongoDB integration for storing document metadata and chat history.
+- 🎨 **Modern Dashboard**: A sleek, responsive UI built with Next.js and Tailwind CSS.
+- 🛡️ **CI/CD**: Automated testing and build validation via GitHub Actions.
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    A[User] -->|Upload PDF/URL| B[Frontend - Next.js]
+    B -->|API Request| C[Backend - Express]
+    C -->|Extract Text| D[PDF Parser / Scraper]
+    D -->|Generate Embeddings| E[Local Transformer Model]
+    E -->|Store Metadata| F[MongoDB]
+    C -->|Ask Question| G[Semantic Search]
+    G -->|Context + Query| H[Groq AI]
+    H -->|Response| B
+```
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework**: [Next.js](https://nextjs.org/)
+- **Framework**: [Next.js](https://nextjs.org/) (App Router)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
-- **PDF Handling**: [React PDF](https://github.com/wojtekmaj/react-pdf) & [React Dropzone](https://react-dropzone.js.org/)
+- **State Management**: React Hooks
 
 ### Backend
 - **Runtime**: [Node.js](https://nodejs.org/)
 - **Framework**: [Express.js](https://expressjs.com/)
-- **Database**: [MongoDB](https://www.mongodb.com/) (via Mongoose)
 - **AI/ML**: 
-  - [Groq SDK](https://groq.com/) (LLM)
-  - [Xenova Transformers](https://huggingface.co/docs/transformers.js/) (Local Embeddings)
-- **File Processing**: [Multer](https://github.com/expressjs/multer) & [PDF-parse](https://www.npmjs.com/package/pdf-parse)
+  - [Groq Cloud](https://groq.com/) (Inference)
+  - [Transformers.js](https://huggingface.co/docs/transformers.js/) (Local Embeddings)
+- **Database**: [MongoDB](https://www.mongodb.com/) (Mongoose)
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js 18+ 
-- MongoDB instance (Local or Atlas)
+- MongoDB (Local or Atlas)
 - Groq API Key
 
 ### Installation
 
-1. **Clone the repository:**
+1. **Clone the repo:**
    ```bash
-   git clone <your-repo-url>
-   cd rag
+   git clone https://github.com/bhavish-codes/Ask-Dock-AI.git
+   cd Ask-Dock-AI
    ```
 
-2. **Setup Backend:**
+2. **Backend Setup:**
    ```bash
    cd backend
-   cp .env.example .env
-   # Add your GROQ_API_KEY and MONGODB_URI to .env
    npm install
+   # Create .env with MONGODB_URI and GROQ_API_KEY
    npm run dev
    ```
 
-3. **Setup Frontend:**
+3. **Frontend Setup:**
    ```bash
    cd ../frontend
    npm install
    npm run dev
    ```
 
-4. **Access the app:**
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+## 🧪 Testing
+We use GitHub Actions to ensure code quality. You can run linting and builds locally:
+```bash
+# Frontend
+cd frontend && npm run lint && npm run build
+
+# Backend
+cd backend && node --check src/index.js
+```
 
 ## 🚢 Deployment
-
-### Vercel (Recommended)
-This project is optimized for deployment on Vercel. 
-
-1. Push your code to a GitHub repository.
-2. Connect the `frontend` and `backend` as separate projects in Vercel.
-3. Configure environment variables in the Vercel dashboard.
-
-## 🛡️ Security
-- Environment variables are managed via `.env` and excluded from source control.
-- Root and sub-directory `.gitignore` files ensure no sensitive data (like `uploads/` or `.DS_Store`) is leaked.
+- **Frontend**: Deploy to Vercel (automatic via GitHub integration).
+- **Backend**: Deploy to Vercel/Render. The project includes a `vercel.json` for seamless serverless deployment.
 
 ## 📄 License
-This project is licensed under the MIT License.
+MIT License. Created by [Bhavish Dhar](https://github.com/bhavish-codes).
