@@ -187,9 +187,9 @@ export default function Home() {
             key={currentDocument?.documentId ?? 'no-document'}
             pdfUrl={
               currentDocument?.fileUrl 
-                ? (currentDocument.fileUrl.startsWith('http') && !currentDocument.fileUrl.includes('localhost') && !currentDocument.fileUrl.includes('5001')
-                    ? currentDocument.fileUrl 
-                    : `${currentDocument.fileUrl}${currentDocument.fileUrl.includes('?') ? '&' : '?'}token=${token}`)
+                ? (currentDocument.fileUrl.includes('/documents/') && !currentDocument.fileUrl.includes('token=')
+                    ? `${currentDocument.fileUrl}${token ? (currentDocument.fileUrl.includes('?') ? `&token=${token}` : `?token=${token}`) : ''}`
+                    : currentDocument.fileUrl)
                 : null
             }
           />
