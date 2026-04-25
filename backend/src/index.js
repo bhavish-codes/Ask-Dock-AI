@@ -390,7 +390,7 @@ app.get("/ask", auth, async(req,res)=>{
 
   scored.sort((a,b)=>b.score-a.score);
 
-  const SIMILARITY_THRESHOLD=0.25;
+  const SIMILARITY_THRESHOLD=0.15;
   const TOP_K=5;
 
   let topResults=scored.filter(
