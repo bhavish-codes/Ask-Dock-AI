@@ -390,17 +390,24 @@ app.get("/ask", auth, async(req,res)=>{
 
   scored.sort((a,b)=>b.score-a.score);
 
+  // Check if this is a conversational message — skip strict threshold filtering
+  const conversationalPattern = /^(hi|hello|hey|thanks|thank you|ok|okay|bye|good|great|cool|nice|sure|yes|no|yep|nope|what's up|howdy|greetings)[!?.]*$/i;
+  const isConversational = conversationalPattern.test(q.trim());
+
   const SIMILARITY_THRESHOLD=0.15;
   const TOP_K=5;
 
-  let topResults=scored.filter(
-    item=>item.score>=SIMILARITY_THRESHOLD
-  );
-
-  if(topResults.length===0){
-    topResults=scored.slice(0,TOP_K);
-  }else{
-    topResults=topResults.slice(0,TOP_K);
+  let topResults;
+  if (isConversational) {
+    // For greetings/casual chat, just pass the top 2 chunks as light context
+    topResults = scored.slice(0, 2);
+  } else {
+    topResults = scored.filter(item => item.score >= SIMILARITY_THRESHOLD);
+    if (topResults.length === 0) {
+      topResults = scored.slice(0, TOP_K);
+    } else {
+      topResults = topResults.slice(0, TOP_K);
+    }
   }
 
   const introChunk = stored.length > 0 ? stored[0] : null;

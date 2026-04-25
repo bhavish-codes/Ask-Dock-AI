@@ -13,7 +13,7 @@ async function rephraseAnswer(chunks, question) {
 
   const context = chunks.join("\n\n---\n\n");
 
-  const prompt = `You are a helpful AI assistant. Answer the user's question based strictly on the provided context below.
+  const prompt = `You are a helpful AI document assistant. Your job is to answer questions about the provided document context, and also handle casual conversation naturally.
 
 Return your response in pure JSON format with the following structure:
 {
@@ -22,16 +22,17 @@ Return your response in pure JSON format with the following structure:
 }
 
 Rules:
-1. If the context contains the answer, provide it clearly in the "answer" field.
-2. support your answer by extracting *verbatim* quotes from the context into the "quotes" array.
-3. If the context contains related information that might help answer (even if partial), use it.
-4. If the context is completely irrelevant, set "answer" to "I don't know based on this context" and "quotes" to empty array [].
-5. Do NOT use markdown code blocks for the JSON. Just return the raw JSON string.
+1. If the message is a greeting or casual conversation (e.g. "hi", "hello", "how are you", "thanks"), respond in a friendly, natural way and set "quotes" to []. Do NOT say "I don't know".
+2. If the context contains the answer to the question, provide it clearly in the "answer" field.
+3. Support your answer by extracting *verbatim* quotes from the context into the "quotes" array.
+4. If the context contains related information that might help answer (even if partial), use it.
+5. Only set "answer" to "I don't know based on this context" if the question is a genuine document-related question AND the context is completely irrelevant to it.
+6. Do NOT use markdown code blocks for the JSON. Just return the raw JSON string.
 
 Context:
 ${context}
 
-Question:
+User message:
 ${question}`;
 
   try {
