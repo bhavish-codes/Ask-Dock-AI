@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Header from '../components/Header';
 import DocumentSidebar from '../components/DocumentSidebar';
 import ChatAssistant from '../components/ChatAssistant';
+import Login from '../components/Login';
 
 // Dynamically import DocumentViewer to disable SSR since react-pdf relies on browser APIs like DOMMatrix
 const DocumentViewer = dynamic(() => import('../components/DocumentViewer'), { ssr: false });
@@ -60,14 +61,46 @@ function normalizeDocument(rawDocument: Partial<StoredDocument> & { fileSize?: n
 export default function Home() {
   const [documents, setDocuments] = useState<StoredDocument[]>([]);
   const [currentDocument, setCurrentDocument] = useState<StoredDocument | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   React.useEffect(() => {
+    const savedToken = localStorage.getItem('token');
+    if (savedToken) {
+      setToken(savedToken);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  const handleLogin = (newToken: string, userId: string, username: string) => {
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('userId', userId);
+    localStorage.setItem('username', username);
+    setToken(newToken);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+    localStorage.removeItem('currentDocumentId');
+    setToken(null);
+    setDocuments([]);
+    setCurrentDocument(null);
+  };
+
+  React.useEffect(() => {
+    if (!token) return;
     let isActive = true;
 
     async function loadDocuments() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-        const response = await fetch(`${apiUrl}/documents`);
+        const response = await fetch(`${apiUrl}/documents`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
         if (!response.ok) {
           if (isActive) {
@@ -91,7 +124,7 @@ export default function Home() {
         const savedDocumentId = localStorage.getItem('currentDocumentId');
         const savedDocument = normalizedDocuments.find((document) => document.documentId === savedDocumentId);
 
-        setCurrentDocument(savedDocument || normalizedDocuments[0] || null);
+        setCurrentDocument(savedDocument || null);
       } catch (error) {
         console.warn('Documents endpoint is unavailable right now.', error);
         if (isActive) {
@@ -106,7 +139,7 @@ export default function Home() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [token]);
 
   const handleDocumentChange = (document: StoredDocument) => {
     const normalizedDocument = normalizeDocument(document);
@@ -126,9 +159,15 @@ export default function Home() {
     localStorage.setItem('currentDocumentId', normalizedDocument.documentId);
   };
 
+  if (!isLoaded) return null;
+  if (!token) return <Login onLogin={handleLogin} />;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      <Header />
+      <Header 
+        onLogout={handleLogout} 
+        username={typeof window !== 'undefined' ? localStorage.getItem('username') : null} 
+      />
       
       {/* Main Content Area */}
        <main className="flex-1 flex flex-col lg:flex-row gap-6 p-4 lg:p-6 lg:h-[calc(100vh-73px)] overflow-hidden max-w-[1600px] mx-auto w-full">
@@ -137,12 +176,19 @@ export default function Home() {
             documents={documents}
             currentDocumentId={currentDocument?.documentId ?? null}
             onDocumentChange={handleDocumentChange}
+            token={token}
           />
         </div>
         <div className="flex-1 min-h-[500px] lg:min-h-0 lg:h-full flex flex-col">
           <DocumentViewer
             key={currentDocument?.documentId ?? 'no-document'}
-            pdfUrl={currentDocument?.fileUrl ?? null}
+            pdfUrl={
+              currentDocument?.fileUrl 
+                ? (currentDocument.fileUrl.startsWith('http') && !currentDocument.fileUrl.includes('localhost') && !currentDocument.fileUrl.includes('5001')
+                    ? currentDocument.fileUrl 
+                    : `${currentDocument.fileUrl}${currentDocument.fileUrl.includes('?') ? '&' : '?'}token=${token}`)
+                : null
+            }
           />
         </div>
         <div className="flex-shrink-0 lg:w-96 w-full lg:h-full lg:overflow-hidden h-[600px]">
@@ -150,6 +196,7 @@ export default function Home() {
             key={currentDocument?.documentId ?? 'no-document'}
             currentDocumentId={currentDocument?.documentId ?? null}
             currentFileName={currentDocument?.fileName ?? null}
+            token={token}
           />
         </div>
       </main>

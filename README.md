@@ -1,6 +1,6 @@
 # Ask Docks AI 🚀
 
-Ask Docks AI is a professional Retrieval-Augmented Generation (RAG) application that allows you to chat with your documents and web content. Upload PDFs or provide URLs to gain instant insights using state-of-the-art AI.
+Ask Docks AI is a professional, secure Retrieval-Augmented Generation (RAG) application that allows you to chat with your documents privately. Upload PDFs to gain instant insights using state-of-the-art AI, with data strictly isolated by user.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
@@ -10,39 +10,41 @@ Ask Docks AI is a professional Retrieval-Augmented Generation (RAG) application 
 
 ## ✨ Features
 
+- 🔐 **User Authentication**: Secure sign-up and login system using JWT and encrypted passwords.
+- 🛡️ **Access Control**: Strict data isolation. Users can only access and interact with their own documents.
 - 📄 **PDF Analysis**: Seamlessly upload and extract text from PDFs.
-- 🌐 **URL Ingestion**: Scrape and index website content for interactive Q&A.
 - 🧠 **Semantic Search**: Uses local embeddings (**all-MiniLM-L6-v2**) to retrieve the most relevant context.
 - 💬 **AI Assistant**: Powered by **Groq** for high-speed, accurate responses.
-- 📂 **Persistence**: MongoDB integration for storing document metadata and chat history.
-- 🎨 **Modern Dashboard**: A sleek, responsive UI built with Next.js and Tailwind CSS.
-- 🛡️ **CI/CD**: Automated testing and build validation via GitHub Actions.
+- 📂 **Persistence**: MongoDB integration for storing user-linked document metadata and chat history.
+- 🎨 **Modern Dashboard**: A sleek, responsive UI built with Next.js and premium glassmorphism design.
 
 ## 🏗️ Architecture
 
 ```mermaid
 graph TD
-    A[User] -->|Upload PDF/URL| B[Frontend - Next.js]
-    B -->|API Request| C[Backend - Express]
-    C -->|Extract Text| D[PDF Parser / Scraper]
-    D -->|Generate Embeddings| E[Local Transformer Model]
-    E -->|Store Metadata| F[MongoDB]
-    C -->|Ask Question| G[Semantic Search]
-    G -->|Context + Query| H[Groq AI]
-    H -->|Response| B
+    A[User] -->|Auth/Login| B[Frontend - Next.js]
+    B -->|Upload PDF + JWT| C[Backend - Express]
+    C -->|Verify Token| D[Auth Middleware]
+    D -->|Extract Text| E[PDF Parser]
+    E -->|Generate Embeddings| F[Local Transformer Model]
+    F -->|Store User-Linked Data| G[MongoDB]
+    C -->|Ask Question| H[Semantic Search]
+    H -->|Context + Query| I[Groq AI]
+    I -->|Response| B
 ```
 
 ## 🛠️ Tech Stack
 
 ### Frontend
 - **Framework**: [Next.js](https://nextjs.org/) (App Router)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Styling**: Vanilla CSS / Tailwind CSS (Optional)
 - **Icons**: [Lucide React](https://lucide.dev/)
-- **State Management**: React Hooks
+- **Auth Management**: JWT + LocalStorage
 
 ### Backend
 - **Runtime**: [Node.js](https://nodejs.org/)
 - **Framework**: [Express.js](https://expressjs.com/)
+- **Authentication**: [JWT](https://jwt.io/) + [bcryptjs](https://www.npmjs.com/package/bcryptjs)
 - **AI/ML**: 
   - [Groq Cloud](https://groq.com/) (Inference)
   - [Transformers.js](https://huggingface.co/docs/transformers.js/) (Local Embeddings)
@@ -67,7 +69,7 @@ graph TD
    ```bash
    cd backend
    npm install
-   # Create .env with MONGODB_URI and GROQ_API_KEY
+   # Create .env with MONGODB_URI, GROQ_API_KEY, and JWT_SECRET
    npm run dev
    ```
 
@@ -82,7 +84,7 @@ graph TD
 We use GitHub Actions to ensure code quality. You can run linting and builds locally:
 ```bash
 # Frontend
-cd frontend && npm run lint && npm run build
+cd frontend && npm run build
 
 # Backend
 cd backend && node --check src/index.js
@@ -90,7 +92,7 @@ cd backend && node --check src/index.js
 
 ## 🚢 Deployment
 - **Frontend**: Deploy to Vercel (automatic via GitHub integration).
-- **Backend**: Deploy to Vercel/Render. The project includes a `vercel.json` for seamless serverless deployment.
+- **Backend**: Deploy to Vercel or Render. The project includes a `vercel.json` for seamless serverless deployment.
 
 ## 📄 License
 MIT License. Created by [Bhavish Dhar](https://github.com/bhavish-codes).

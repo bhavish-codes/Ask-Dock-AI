@@ -36,6 +36,11 @@ const documentChunkSchema = new mongoose.Schema(
 
 const documentSchema = new mongoose.Schema(
   {
+    userId: {
+      type: String,
+      required: true,
+      index: true
+    },
     documentId: {
       type: String,
       required: true,
@@ -60,7 +65,7 @@ const documentSchema = new mongoose.Schema(
     },
     sourceType: {
       type: String,
-      enum: ["pdf", "url", "text"],
+      enum: ["pdf"],
       default: "pdf"
     },
     status: {

@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const fileAssetSchema = new mongoose.Schema(
   {
+    userId: {
+      type: String,
+      required: true,
+      index: true
+    },
     documentId: {
       type: String,
       required: true,

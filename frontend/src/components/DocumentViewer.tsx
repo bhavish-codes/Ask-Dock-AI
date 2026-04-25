@@ -32,8 +32,15 @@ export default function DocumentViewer({ pdfUrl }: DocumentViewerProps) {
   const handleZoomOut = () => setScale(prev => Math.max(prev - 0.25, 0.5));
   const handleRotate = () => setRotation(prev => (prev + 90) % 360);
 
-  const handlePrevPage = () => setPageNumber(prev => Math.max(prev - 1, 1));
-  const handleNextPage = () => setPageNumber(prev => Math.min(prev + 1, numPages || 1));
+  const handlePrevPage = () => {
+    setPageNumber(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    if (numPages && pageNumber < numPages) {
+      setPageNumber(prev => prev + 1);
+    }
+  };
 
   return (
     <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl flex flex-col overflow-hidden h-full">
@@ -46,8 +53,22 @@ export default function DocumentViewer({ pdfUrl }: DocumentViewerProps) {
         <div className="flex gap-2">
           {pdfUrl && (
             <>
-            <button type="button" onClick={handlePrevPage} disabled={!numPages || pageNumber <= 1} className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50">Prev</button>
-              <button type="button" onClick={handleNextPage} disabled={!numPages || pageNumber >= (numPages || 1)} className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50">Next</button>
+            <button 
+              type="button" 
+              onClick={handlePrevPage} 
+              disabled={!numPages || pageNumber <= 1} 
+              className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Prev
+            </button>
+            <button 
+              type="button" 
+              onClick={handleNextPage} 
+              disabled={!numPages || pageNumber >= numPages} 
+              className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
               <div className="w-px h-6 bg-gray-300 mx-1 self-center"></div>
               </>
           )}

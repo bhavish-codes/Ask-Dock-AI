@@ -17,6 +17,7 @@ interface DocumentSidebarProps {
   documents: StoredDocument[];
   currentDocumentId?: string | null;
   onDocumentChange?: (document: StoredDocument) => void;
+  token?: string | null;
 }
 
 function formatFileSize(fileSize: number): string {
@@ -31,7 +32,7 @@ function formatFileSize(fileSize: number): string {
   return `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export default function DocumentSidebar({ documents, currentDocumentId, onDocumentChange }: DocumentSidebarProps) {
+export default function DocumentSidebar({ documents, currentDocumentId, onDocumentChange, token }: DocumentSidebarProps) {
   const [isUploading, setIsUploading] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -46,6 +47,9 @@ export default function DocumentSidebar({ documents, currentDocumentId, onDocume
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
       const res = await fetch(`${apiUrl}/upload`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData,
       });
 
@@ -70,7 +74,7 @@ export default function DocumentSidebar({ documents, currentDocumentId, onDocume
     } finally {
       setIsUploading(false);
     }
-  }, [onDocumentChange]);
+  }, [onDocumentChange, token]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

@@ -1,10 +1,10 @@
 require("dotenv").config();
-const {readDocument}=require("./utils/readDoc");
+
 const {chunkText}=require("./utils/chunker");
-const {keywordSearch}=require("./utils/search");
+
 const {generateEmbedding}=require("./utils/embeddings");
 const {addEmbedding,getAllEmbeddings,resetStore,hasDocument,setDocumentEmbeddings}=require("./utils/vectorStore");
-const {scrapeUrl}=require("./utils/scraper");
+
 const {cosineSimilarity}=require("./utils/similarity");
 const {rephraseAnswer}=require("./utils/answerGenerator");
 const {extractTextFromPdf}=require("./utils/pdfExtractor");
@@ -15,13 +15,20 @@ const cors=require("cors");
 const express=require("express");
 const multer=require("multer");
 const path=require("path");
+const jwt = require("jsonwebtoken");
+const { auth } = require("./utils/auth");
+const UserModel = require("./models/User");
 
 
 const app=express();
+app.use(cors()); // Allow all origins for simplicity in development
 app.use(express.json());
-app.use(cors({
-  origin: true
-}));
+
+// Request logger for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 async function upsertDocumentRecord(payload) {
   if (!isDatabaseConfigured()) {
@@ -34,13 +41,13 @@ async function upsertDocumentRecord(payload) {
   }
 
   return DocumentModel.findOneAndUpdate(
-    { documentId: payload.documentId },
+    { documentId: payload.documentId, userId: payload.userId },
     payload,
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 }
 
-async function appendChatMessages(documentId, messages) {
+async function appendChatMessages(documentId, userId, messages) {
   if (!isDatabaseConfigured()) {
     return;
   }
@@ -51,12 +58,12 @@ async function appendChatMessages(documentId, messages) {
   }
 
   await DocumentModel.updateOne(
-    { documentId },
+    { documentId, userId },
     { $push: { chatHistory: { $each: messages } } }
   );
 }
 
-async function getDocumentRecord(documentId) {
+async function getDocumentRecord(documentId, userId) {
   if (!isDatabaseConfigured()) {
     return null;
   }
@@ -66,7 +73,7 @@ async function getDocumentRecord(documentId) {
     return null;
   }
 
-  return DocumentModel.findOne({ documentId });
+  return DocumentModel.findOne({ documentId, userId });
 }
 
 async function upsertFileAsset(payload) {
@@ -80,13 +87,13 @@ async function upsertFileAsset(payload) {
   }
 
   return FileAssetModel.findOneAndUpdate(
-    { documentId: payload.documentId },
+    { documentId: payload.documentId, userId: payload.userId },
     payload,
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 }
 
-async function getFileAsset(documentId) {
+async function getFileAsset(documentId, userId) {
   if (!isDatabaseConfigured()) {
     return null;
   }
@@ -96,7 +103,7 @@ async function getFileAsset(documentId) {
     return null;
   }
 
-  return FileAssetModel.findOne({ documentId });
+  return FileAssetModel.findOne({ documentId, userId });
 }
 
 function getRequestBaseUrl(req) {
@@ -109,12 +116,12 @@ function buildDocumentFileUrl(req, documentId) {
   return `${getRequestBaseUrl(req)}/documents/${encodeURIComponent(documentId)}/file`;
 }
 
-async function hydrateDocumentEmbeddings(documentId) {
+async function hydrateDocumentEmbeddings(documentId, userId) {
   if (hasDocument(documentId)) {
     return getAllEmbeddings(documentId);
   }
 
-  const documentRecord = await getDocumentRecord(documentId);
+  const documentRecord = await getDocumentRecord(documentId, userId);
 
   if (!documentRecord || !Array.isArray(documentRecord.chunks) || documentRecord.chunks.length === 0) {
     return [];
@@ -141,101 +148,46 @@ app.get("/",(req,res)=>{
   res.send("API is running");
 })
 
-app.get("/doc",(req,res)=>{
-  const text=readDocument();
-  res.send(text);
-});
-
-app.get("/chunks",(req,res)=>{
-  const text=readDocument();
-  const chunks=chunkText(text);
-  res.json(chunks);
-});
-
-app.get("/search",(req,res)=>{
-  const {q}=req.query;
-  const text=readDocument();
-  const chunks=chunkText(text);
-  const results=keywordSearch(chunks,q);
-  res.json(results);
-});
-
-app.get("/embed-test",async(req,res)=>{
-  const vec=await generateEmbedding("authentication and login");
-  res.json({
-    length:vec.length,
-    sample:vec.slice(0,5)
-  });
-});
-
-app.get("/index-doc",async(req,res)=>{
-  const text=readDocument();
-  const chunks=chunkText(text);
-  const documentId = "local-doc";
-
-  for(const chunk of chunks){
-    const embedding=await generateEmbedding(chunk);
-    addEmbedding(documentId,chunk,embedding);
-  }
-
-  res.json({
-    message:"Document indexed",
-    chunks:chunks.length
-  });
-});
-
-app.post("/ingest", async (req, res) => {
-  const { url } = req.body;
-
-  if (!url) {
-    return res.status(400).json({ error: "URL is required" });
-  }
-
+app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
   try {
-    resetStore(url);
-
-    const text = await scrapeUrl(url);
-
-    if (!text) {
-      return res.status(400).json({ error: "No content found at URL" });
-    }
-
-    const chunks = chunkText(text);
-
-    for (const chunk of chunks) {
-      const embedding = await generateEmbedding(chunk);
-      addEmbedding(url, chunk, embedding);
-    }
-
-    await upsertDocumentRecord({
-      documentId: url,
-      fileName: url,
-      fileUrl: url,
-      fileSize: 0,
-      sourceType: "url",
-      status: "READY",
-      chunks: getAllEmbeddings(url),
-      chatHistory: []
-    });
-
-    res.json({
-      message: "Ingestion and indexing complete",
-      chunks: chunks.length,
-      documentId: url
-    });
-
+    const user = new UserModel({ username, password });
+    await user.save();
+    res.json({ message: "User registered successfully" });
   } catch (error) {
-    console.error("Ingestion failed:", error);
-    res.status(500).json({ error: "Ingestion failed: " + error.message });
+    res.status(400).json({ error: "Registration failed: " + error.message });
   }
 });
 
-app.post("/upload", upload.single('file'), async (req, res) => {
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await UserModel.findOne({ username });
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const token = jwt.sign({ userId: user._id, username: user.username }, process.env.JWT_SECRET || "fallback_secret", { expiresIn: "24h" });
+    res.json({ token, userId: user._id, username: user.username });
+  } catch (error) {
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+app.get("/login", (req, res) => {
+  res.send("Login endpoint is active. Please use POST to authenticate.");
+});
+
+
+
+
+
+app.post("/upload", auth, upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
   try {
+    const userId = req.user.userId;
     const documentId = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(req.file.originalname)}`;
     resetStore(documentId);
 
@@ -254,6 +206,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     }
 
     await upsertFileAsset({
+      userId,
       documentId,
       fileName: req.file.originalname,
       mimeType: req.file.mimetype || "application/pdf",
@@ -264,6 +217,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     const fileUrl = buildDocumentFileUrl(req, documentId);
 
     await upsertDocumentRecord({
+      userId,
       documentId,
       fileName: req.file.originalname,
       fileUrl,
@@ -290,12 +244,12 @@ app.post("/upload", upload.single('file'), async (req, res) => {
   }
 });
 
-app.get("/documents/:documentId/file", async (req, res) => {
+app.get("/documents/:documentId/file", auth, async (req, res) => {
   try {
-    const fileAsset = await getFileAsset(req.params.documentId);
+    const fileAsset = await getFileAsset(req.params.documentId, req.user.userId);
 
     if (!fileAsset) {
-      return res.status(404).send("File not found");
+      return res.status(404).send("File not found or access denied");
     }
 
     res.setHeader("Content-Type", fileAsset.mimeType || "application/pdf");
@@ -308,8 +262,9 @@ app.get("/documents/:documentId/file", async (req, res) => {
   }
 });
 
-app.get("/documents", async (req, res) => {
+app.get("/documents", auth, async (req, res) => {
   try {
+    const userId = req.user.userId;
     if (!isDatabaseConfigured()) {
       return res.json([]);
     }
@@ -320,7 +275,7 @@ app.get("/documents", async (req, res) => {
     }
 
     const documents = await DocumentModel.find(
-      {},
+      { userId, sourceType: { $ne: "url" } },
       {
         documentId: 1,
         fileName: 1,
@@ -328,7 +283,6 @@ app.get("/documents", async (req, res) => {
         mimeType: 1,
         fileSize: 1,
         status: 1,
-        sourceType: 1,
         createdAt: 1,
         updatedAt: 1
       }
@@ -338,7 +292,7 @@ app.get("/documents", async (req, res) => {
       documents.map((doc) => ({
         documentId: doc.documentId,
         fileName: doc.fileName,
-        fileUrl: doc.sourceType === "pdf" ? buildDocumentFileUrl(req, doc.documentId) : doc.fileUrl,
+        fileUrl: buildDocumentFileUrl(req, doc.documentId),
         mimeType: doc.mimeType,
         fileSize: doc.fileSize,
         status: doc.status,
@@ -352,12 +306,12 @@ app.get("/documents", async (req, res) => {
   }
 });
 
-app.get("/documents/:documentId/chat", async (req, res) => {
+app.get("/documents/:documentId/chat", auth, async (req, res) => {
   try {
-    const documentRecord = await getDocumentRecord(req.params.documentId);
+    const documentRecord = await getDocumentRecord(req.params.documentId, req.user.userId);
 
     if (!documentRecord) {
-      return res.json([]);
+      return res.status(404).json({ error: "Document not found or access denied" });
     }
 
     res.json(documentRecord.chatHistory || []);
@@ -368,7 +322,7 @@ app.get("/documents/:documentId/chat", async (req, res) => {
 });
 
 
-app.get("/semantic-search",async(req,res)=>{
+app.get("/semantic-search", auth, async(req,res)=>{
   const {q, documentId}=req.query;
   if(!q){
     return res.json([]);
@@ -378,9 +332,9 @@ app.get("/semantic-search",async(req,res)=>{
     return res.status(400).json({ error: "documentId is required" });
   }
 
-  const stored=await hydrateDocumentEmbeddings(documentId);
+  const stored=await hydrateDocumentEmbeddings(documentId, req.user.userId);
   if(stored.length===0){
-    return res.status(404).json({ error: "Document not found or not indexed yet" });
+    return res.status(404).json({ error: "Document not found, not indexed yet, or access denied" });
   }
 
   const queryEmbedding=await generateEmbedding(q);
@@ -396,8 +350,9 @@ app.get("/semantic-search",async(req,res)=>{
 
 
 
-app.get("/ask",async(req,res)=>{
+app.get("/ask", auth, async(req,res)=>{
   const {q, documentId}=req.query;
+  const userId = req.user.userId;
 
   if(!q){
     return res.json({
@@ -414,10 +369,10 @@ app.get("/ask",async(req,res)=>{
   }
 
   if(!hasDocument(documentId)){
-    const hydratedDocument=await hydrateDocumentEmbeddings(documentId);
+    const hydratedDocument=await hydrateDocumentEmbeddings(documentId, userId);
     if(hydratedDocument.length===0){
       return res.status(404).json({
-        answer:"This document could not be found. Please upload it again.",
+        answer:"This document could not be found or access is denied. Please upload it again.",
         sources:[]
       });
     }
@@ -457,7 +412,7 @@ app.get("/ask",async(req,res)=>{
 
   const response=await rephraseAnswer(uniqueChunks,q);
 
-  await appendChatMessages(documentId, [
+  await appendChatMessages(documentId, userId, [
     { role: "user", content: q },
     { role: "assistant", content: response.answer }
   ]);

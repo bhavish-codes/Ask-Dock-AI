@@ -12,6 +12,7 @@ interface Message {
 interface ChatAssistantProps {
   currentDocumentId: string | null;
   currentFileName: string | null;
+  token?: string | null;
 }
 
 const defaultWelcomeMessage: Message = {
@@ -28,7 +29,7 @@ function getGreetingMessage(fileName: string): Message {
   };
 }
 
-export default function ChatAssistant({ currentDocumentId, currentFileName }: ChatAssistantProps) {
+export default function ChatAssistant({ currentDocumentId, currentFileName, token }: ChatAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([defaultWelcomeMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +47,11 @@ export default function ChatAssistant({ currentDocumentId, currentFileName }: Ch
 
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-        const response = await fetch(`${apiUrl}/documents/${encodeURIComponent(currentDocumentId)}/chat`);
+        const response = await fetch(`${apiUrl}/documents/${encodeURIComponent(currentDocumentId)}/chat`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
         if (!response.ok) {
           if (isActive) {
@@ -84,7 +89,7 @@ export default function ChatAssistant({ currentDocumentId, currentFileName }: Ch
     return () => {
       isActive = false;
     };
-  }, [currentDocumentId, currentFileName]);
+  }, [currentDocumentId, currentFileName, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +103,12 @@ export default function ChatAssistant({ currentDocumentId, currentFileName }: Ch
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
       const response = await fetch(
-        `${apiUrl}/ask?q=${encodeURIComponent(userMessage.content)}&documentId=${encodeURIComponent(currentDocumentId)}`
+        `${apiUrl}/ask?q=${encodeURIComponent(userMessage.content)}&documentId=${encodeURIComponent(currentDocumentId)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
       );
       if (!response.ok) throw new Error('API request failed');
       const data = await response.json();
