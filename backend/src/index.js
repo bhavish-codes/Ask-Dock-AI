@@ -30,6 +30,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Ensure database is connected for serverless environments
+connectToDatabase().catch(err => console.error("Initial DB connection failed:", err));
+
 async function upsertDocumentRecord(payload) {
   if (!isDatabaseConfigured()) {
     return null;
@@ -426,16 +429,9 @@ app.get("/ask", auth, async(req,res)=>{
 const PORT = process.env.PORT || 5001;
 
 if (require.main === module) {
-  connectToDatabase()
-    .catch((error) => {
-      console.error("MongoDB connection failed:", error.message);
-      console.warn("Continuing with in-memory storage only.");
-    })
-    .finally(() => {
-      app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-      });
-    });
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 }
 
 module.exports = app;
