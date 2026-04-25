@@ -46,8 +46,8 @@ export default function ChatAssistant({ currentDocumentId, currentFileName, toke
       }
 
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-        const response = await fetch(`${apiUrl}/documents/${encodeURIComponent(currentDocumentId)}/chat`, {
+        const baseApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001').replace(/\/$/, '');
+        const response = await fetch(`${baseApiUrl}/documents/${encodeURIComponent(currentDocumentId)}/chat`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -101,9 +101,9 @@ export default function ChatAssistant({ currentDocumentId, currentFileName, toke
     setIsLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      const baseApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001').replace(/\/$/, '');
       const response = await fetch(
-        `${apiUrl}/ask?q=${encodeURIComponent(userMessage.content)}&documentId=${encodeURIComponent(currentDocumentId)}`,
+        `${baseApiUrl}/ask?q=${encodeURIComponent(userMessage.content)}&documentId=${encodeURIComponent(currentDocumentId)}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`

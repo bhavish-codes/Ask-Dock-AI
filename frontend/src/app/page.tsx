@@ -98,8 +98,8 @@ export default function Home() {
 
     async function loadDocuments() {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-        const response = await fetch(`${apiUrl}/documents`, {
+        const baseApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001').replace(/\/$/, '');
+        const response = await fetch(`${baseApiUrl}/documents`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

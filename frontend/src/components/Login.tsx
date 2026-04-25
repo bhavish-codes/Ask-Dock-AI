@@ -18,11 +18,11 @@ export default function Login({ onLogin }: LoginProps) {
     setError('');
     setIsLoading(true);
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+    const baseApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001').replace(/\/$/, '');
     const endpoint = isRegister ? '/register' : '/login';
 
     try {
-      const response = await fetch(`${apiUrl}${endpoint}`, {
+      const response = await fetch(`${baseApiUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

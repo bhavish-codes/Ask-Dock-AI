@@ -44,8 +44,8 @@ export default function DocumentSidebar({ documents, currentDocumentId, onDocume
     formData.append('file', file);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const res = await fetch(`${apiUrl}/upload`, {
+      const baseApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001').replace(/\/$/, '');
+      const res = await fetch(`${baseApiUrl}/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
