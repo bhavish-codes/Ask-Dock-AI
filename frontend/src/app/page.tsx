@@ -66,10 +66,13 @@ export default function Home() {
 
   React.useEffect(() => {
     const savedToken = localStorage.getItem('token');
-    if (savedToken) {
-      setToken(savedToken);
-    }
-    setIsLoaded(true);
+    // Defer state updates to the next microtask to avoid synchronous cascading render warnings
+    Promise.resolve().then(() => {
+      if (savedToken) {
+        setToken(savedToken);
+      }
+      setIsLoaded(true);
+    });
   }, []);
 
   const handleLogin = (newToken: string, userId: string, username: string) => {
