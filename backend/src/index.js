@@ -160,10 +160,9 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
   try {
-    const user = await UserModel.findOne({ username });
-    if (!user || !(await user.comparePassword(password))) {
+    const user = await UserModel.findOne({ username: req.body.username });
+    if (!user || !(await user.comparePassword(req.body.password))) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
     const token = jwt.sign({ userId: user._id, username: user.username }, process.env.JWT_SECRET || "fallback_secret", { expiresIn: "24h" });
