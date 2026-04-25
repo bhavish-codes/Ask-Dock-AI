@@ -40,8 +40,9 @@ export default function Login({ onLogin }: LoginProps) {
       } else {
         onLogin(data.token, data.userId, data.username);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
