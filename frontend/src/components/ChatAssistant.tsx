@@ -124,7 +124,7 @@ export default function ChatAssistant({ currentDocumentId, currentFileName, toke
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "Sorry, there was an error communicating with the backend. Please ensure the backend is running on port 5000."
+        content: "Sorry, I'm having trouble connecting to the backend. Please check your internet connection and ensure the server is running."
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {

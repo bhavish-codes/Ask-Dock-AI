@@ -433,6 +433,32 @@ app.get("/ask", auth, async(req,res)=>{
 
 
 
+app.delete("/documents", auth, async (req, res) => {
+  try {
+    const documentId = req.query.documentId;
+    if (!documentId) {
+      return res.status(400).json({ error: "documentId is required" });
+    }
+    const userId = req.user.userId;
+
+    const [docResult, assetResult] = await Promise.all([
+      DocumentModel.deleteOne({ documentId, userId }),
+      FileAssetModel.deleteOne({ documentId, userId })
+    ]);
+
+    if (docResult.deletedCount === 0 && assetResult.deletedCount === 0) {
+      return res.status(404).json({ error: "Document not found or access denied" });
+    }
+
+    resetStore(documentId);
+
+    res.json({ message: "Document deleted successfully" });
+  } catch (error) {
+    console.error("Delete failed:", error);
+    res.status(500).json({ error: "Failed to delete document" });
+  }
+});
+
 const PORT = process.env.PORT || 5001;
 
 if (require.main === module) {

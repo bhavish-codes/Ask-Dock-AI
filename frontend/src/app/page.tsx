@@ -162,6 +162,14 @@ export default function Home() {
     localStorage.setItem('currentDocumentId', normalizedDocument.documentId);
   };
 
+  const handleDocumentDelete = (documentId: string) => {
+    setDocuments((prev) => prev.filter((d) => d.documentId !== documentId));
+    if (currentDocument?.documentId === documentId) {
+      setCurrentDocument(null);
+      localStorage.removeItem('currentDocumentId');
+    }
+  };
+
   if (!isLoaded) return null;
   if (!token) return <Login onLogin={handleLogin} />;
 
@@ -179,6 +187,7 @@ export default function Home() {
             documents={documents}
             currentDocumentId={currentDocument?.documentId ?? null}
             onDocumentChange={handleDocumentChange}
+            onDocumentDelete={handleDocumentDelete}
             token={token}
           />
         </div>
