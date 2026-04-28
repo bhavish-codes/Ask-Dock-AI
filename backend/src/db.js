@@ -17,6 +17,7 @@ async function connectToDatabase() {
   }
 
   if (isConnected) {
+    lastConnectionError = null;
     return true;
   }
 

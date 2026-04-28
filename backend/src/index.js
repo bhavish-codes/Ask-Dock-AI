@@ -1,13 +1,11 @@
 require("dotenv").config();
 
 const {chunkText}=require("./utils/chunker");
-
-const {generateEmbedding}=require("./utils/embeddings");
 const {addEmbedding,getAllEmbeddings,resetStore,hasDocument,setDocumentEmbeddings}=require("./utils/vectorStore");
-
 const {cosineSimilarity}=require("./utils/similarity");
-const {rephraseAnswer}=require("./utils/answerGenerator");
-const {extractTextFromPdf}=require("./utils/pdfExtractor");
+const embeddingsModule=require("./utils/embeddings");
+const answerModule=require("./utils/answerGenerator");
+const pdfExtractorModule=require("./utils/pdfExtractor");
 const {connectToDatabase,isDatabaseConfigured,getLastConnectionError}=require("./db");
 const DocumentModel=require("./models/Document");
 const FileAssetModel=require("./models/FileAsset");
@@ -183,7 +181,7 @@ app.get("/health", async (req, res) => {
       configured: dbConfigured,
       connected: dbConnected,
       uri: maskedUri || "not set",
-      error: dbError || null,
+    error: dbConnected ? null : (dbError || null),
     },
     env: {
       MONGODB_URI: dbConfigured ? "set" : "missing",
@@ -271,7 +269,7 @@ app.post("/upload", auth, upload.single('file'), async (req, res) => {
     resetStore(documentId);
 
     const fileBuffer = req.file.buffer;
-    const text = await extractTextFromPdf(fileBuffer);
+    const text = await pdfExtractorModule.extractTextFromPdf(fileBuffer);
 
     if (!text || text.trim().length === 0) {
       return res.status(422).json({ error: "Could not extract text from PDF. The file may be scanned or image-only." });
@@ -283,7 +281,7 @@ app.post("/upload", auth, upload.single('file'), async (req, res) => {
     }
 
     for (const chunk of chunks) {
-      const embedding = await generateEmbedding(chunk);
+      const embedding = await embeddingsModule.generateEmbedding(chunk);
       addEmbedding(documentId, chunk, embedding);
     }
 
@@ -417,7 +415,7 @@ app.get("/semantic-search", auth, async(req,res)=>{
     return res.status(404).json({ error: "Document not found, not indexed yet, or access denied" });
   }
 
-  const queryEmbedding=await generateEmbedding(q);
+  const queryEmbedding=await embeddingsModule.generateEmbedding(q);
   const scored=stored.map(item=>({
     text:item.text,
     score:cosineSimilarity(queryEmbedding,item.embedding)
@@ -449,7 +447,7 @@ app.get("/ask", auth, async(req,res)=>{
       }
     }
 
-    const queryEmbedding=await generateEmbedding(q);
+    const queryEmbedding=await embeddingsModule.generateEmbedding(q);
     const stored=getAllEmbeddings(documentId);
 
     const scored=stored.map(item=>({
@@ -480,7 +478,7 @@ app.get("/ask", auth, async(req,res)=>{
     }
 
     const uniqueChunks = [...new Set(finalChunks.map(r => r.text))];
-    const response = await rephraseAnswer(uniqueChunks, q);
+    const response = await answerModule.rephraseAnswer(uniqueChunks, q);
 
     await appendChatMessages(documentId, userId, [
       { role: "user", content: q },
