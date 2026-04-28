@@ -77,20 +77,22 @@ ${question}`;
     };
 
   } catch (error) {
-    console.log("LLM Generation Failed:", error.message);
+    console.error(JSON.stringify({ level:"error", route:"rephraseAnswer", msg:"LLM generation failed", error: error.message, ts: new Date().toISOString() }));
     
     let userMessage = "LLM Unavailable";
     if (error.message.includes("429")) {
-      userMessage = "Rate limit exceeded (Too Many Requests)";
+      userMessage = "Rate limit exceeded — too many requests. Please wait a moment.";
     } else if (error.message.includes("404")) {
-      userMessage = "Model not found";
+      userMessage = "AI model not found. Please contact support.";
     } else if (error.message.includes("Missing GROQ_API_KEY")) {
-      userMessage = "Configuration Error: Missing API Key";
+      userMessage = "Configuration error: missing API key.";
+    } else if (error.message.includes("network") || error.message.includes("ECONNREFUSED")) {
+      userMessage = "Network error reaching AI service.";
     }
 
     const mainChunk = chunks[0];
     return {
-      answer: `⚠️ *${userMessage}* - Showing raw documentation search result:\n\n${mainChunk}...`,
+      answer: `⚠️ *${userMessage}* — Showing raw search result:\n\n${mainChunk}...`,
       sources: chunks
     };
   }

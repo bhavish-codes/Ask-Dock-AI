@@ -31,6 +31,9 @@ export default function Login({ onLogin }: LoginProps) {
       const data = await response.json();
 
       if (!response.ok) {
+        // Map status codes to user-friendly messages
+        if (response.status === 503) throw new Error('Server is unavailable. Please try again later.');
+        if (response.status === 409) throw new Error('Username already taken. Please choose another.');
         throw new Error(data.error || 'Authentication failed');
       }
 
@@ -41,7 +44,9 @@ export default function Login({ onLogin }: LoginProps) {
         onLogin(data.token, data.userId, data.username);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+      const message = err instanceof Error
+        ? err.message
+        : 'Could not connect to the server. Check your internet connection.';
       setError(message);
     } finally {
       setIsLoading(false);

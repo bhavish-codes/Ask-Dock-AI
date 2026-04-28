@@ -115,10 +115,13 @@ export default function ChatAssistant({ currentDocumentId, currentFileName, toke
           }
         }
       );
-      if (!response.ok) throw new Error('API request failed');
       if (response.status === 401) {
         onUnauthorized?.();
         return;
+      }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.answer || errData.error || 'API request failed');
       }
       const data = await response.json();
       
@@ -133,7 +136,7 @@ export default function ChatAssistant({ currentDocumentId, currentFileName, toke
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "Sorry, I'm having trouble connecting to the backend. Please check your internet connection and ensure the server is running."
+        content: error instanceof Error ? error.message : "Sorry, something went wrong. Please try again."
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
