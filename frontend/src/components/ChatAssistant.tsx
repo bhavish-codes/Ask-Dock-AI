@@ -13,6 +13,7 @@ interface ChatAssistantProps {
   currentDocumentId: string | null;
   currentFileName: string | null;
   token?: string | null;
+  onUnauthorized?: () => void;
 }
 
 const defaultWelcomeMessage: Message = {
@@ -29,7 +30,7 @@ function getGreetingMessage(fileName: string): Message {
   };
 }
 
-export default function ChatAssistant({ currentDocumentId, currentFileName, token }: ChatAssistantProps) {
+export default function ChatAssistant({ currentDocumentId, currentFileName, token, onUnauthorized }: ChatAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([defaultWelcomeMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -54,6 +55,10 @@ export default function ChatAssistant({ currentDocumentId, currentFileName, toke
         });
 
         if (!response.ok) {
+          if (response.status === 401) {
+            onUnauthorized?.();
+            return;
+          }
           if (isActive) {
             setMessages([getGreetingMessage(currentFileName)]);
           }
@@ -111,6 +116,10 @@ export default function ChatAssistant({ currentDocumentId, currentFileName, toke
         }
       );
       if (!response.ok) throw new Error('API request failed');
+      if (response.status === 401) {
+        onUnauthorized?.();
+        return;
+      }
       const data = await response.json();
       
       const assistantMessage: Message = {

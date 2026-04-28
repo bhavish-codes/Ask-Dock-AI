@@ -106,6 +106,11 @@ export default function Home() {
         });
 
         if (!response.ok) {
+          if (response.status === 401) {
+            // Token is expired or invalid — force logout
+            handleLogout();
+            return;
+          }
           if (isActive) {
             setDocuments([]);
             setCurrentDocument(null);
@@ -209,6 +214,7 @@ export default function Home() {
             currentDocumentId={currentDocument?.documentId ?? null}
             currentFileName={currentDocument?.fileName ?? null}
             token={token}
+            onUnauthorized={handleLogout}
           />
         </div>
       </main>
