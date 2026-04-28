@@ -8,7 +8,7 @@ const {addEmbedding,getAllEmbeddings,resetStore,hasDocument,setDocumentEmbedding
 const {cosineSimilarity}=require("./utils/similarity");
 const {rephraseAnswer}=require("./utils/answerGenerator");
 const {extractTextFromPdf}=require("./utils/pdfExtractor");
-const {connectToDatabase,isDatabaseConfigured}=require("./db");
+const {connectToDatabase,isDatabaseConfigured,getLastConnectionError}=require("./db");
 const DocumentModel=require("./models/Document");
 const FileAssetModel=require("./models/FileAsset");
 const cors=require("cors");
@@ -161,7 +161,42 @@ const upload = multer({
 
 app.get("/",(req,res)=>{
   res.send("API is running");
-})
+});
+
+app.get("/health", async (req, res) => {
+  const dbConfigured = isDatabaseConfigured();
+  let dbConnected = false;
+  let dbError = null;
+
+  if (dbConfigured) {
+    dbConnected = await connectToDatabase();
+    dbError = getLastConnectionError();
+  }
+
+  const mongoUri = process.env.MONGODB_URI || "";
+  // Mask password in URI for safe display: mongodb+srv://user:****@host/...
+  const maskedUri = mongoUri.replace(/:([^@]+)@/, ":****@");
+
+  const status = {
+    api: "ok",
+    database: {
+      configured: dbConfigured,
+      connected: dbConnected,
+      uri: maskedUri || "not set",
+      error: dbError || null,
+    },
+    env: {
+      MONGODB_URI: dbConfigured ? "set" : "missing",
+      MONGODB_DB_NAME: process.env.MONGODB_DB_NAME ? "set" : "missing",
+      JWT_SECRET: process.env.JWT_SECRET ? "set" : "missing (using fallback)",
+      GROQ_API_KEY: process.env.GROQ_API_KEY ? "set" : "missing",
+      PORT: process.env.PORT || "5001 (default)",
+    }
+  };
+
+  const httpStatus = dbConfigured && dbConnected ? 200 : 503;
+  res.status(httpStatus).json(status);
+});
 
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
